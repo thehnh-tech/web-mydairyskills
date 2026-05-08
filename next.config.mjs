@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@mds/shared"],
   // Allow Next.js dev server to be reached from LAN IPs (e.g. phone on same wifi,
   // VPN-attached IPs like 128.179.x.x at EPFL). Loose in dev only.
   allowedDevOrigins: [
