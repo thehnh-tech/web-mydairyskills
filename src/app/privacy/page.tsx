@@ -9,58 +9,207 @@ export const metadata: Metadata = {
   },
 };
 
+const LAST_UPDATED = "May 8, 2026";
+const CONTACT_EMAIL = "support@thehnh.tech";
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <article className="mx-auto max-w-3xl px-5 py-12 sm:px-6">
         <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-          MyDiarySkills
+          ← MyDiarySkills
         </Link>
         <h1 className="mt-6 text-3xl font-semibold tracking-tight">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated: May 8, 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Last updated: {LAST_UPDATED}</p>
 
-        <div className="mt-8 space-y-7 text-sm leading-7 text-muted-foreground">
+        <div className="mt-8 space-y-8 text-sm leading-7 text-muted-foreground">
           <section>
-            <h2 className="text-base font-semibold text-foreground">What we collect</h2>
-            <p className="mt-2">
-              MyDiarySkills stores the account details needed to run the service, including
-              your email address, password hash, optional name, timezone, diary entries,
-              skills, and AI review suggestions.
+            <p>
+              MyDiarySkills (&quot;the app&quot;, &quot;we&quot;) is a private diary and skill tracking
+              service. This policy describes what we collect, why, who we share it with, and the
+              controls available to you. We try to keep this short and concrete — if anything is
+              unclear, write to us at{" "}
+              <a className="text-chart-3 hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
+              </a>
+              .
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold text-foreground">How the diary works</h2>
-            <p className="mt-2">
-              Your diary content is used to provide the daily writing experience, calendar,
-              skills dashboard, exports, and account features. Private diary pages are not
-              indexed intentionally through the public sitemap.
+            <h2 className="text-base font-semibold text-foreground">1. Data we collect</h2>
+            <ul className="mt-3 space-y-2.5 list-disc pl-5">
+              <li>
+                <strong className="text-foreground">Account data:</strong> email, name (optional),
+                timezone, password (stored only as a bcrypt hash — we never see your raw password).
+              </li>
+              <li>
+                <strong className="text-foreground">Diary content:</strong> the text you write each
+                day, plus metadata (date, word count, save timestamps, whether the day was
+                analyzed).
+              </li>
+              <li>
+                <strong className="text-foreground">Skills:</strong> skill names, emojis, levels,
+                progress, descriptions you accept after AI review.
+              </li>
+              <li>
+                <strong className="text-foreground">AI suggestion history:</strong> raw AI proposals
+                attached to a date, kept so you can review and audit them. You can disable this in
+                Settings → AI analysis (&quot;Retain analysis history&quot;).
+              </li>
+              <li>
+                <strong className="text-foreground">Session cookie:</strong> an encrypted, HTTP-only
+                cookie used to keep you signed in. It does not track you across other sites.
+              </li>
+              <li>
+                <strong className="text-foreground">Server logs:</strong> standard request logs
+                (timestamps, IPs, user agents) retained for up to 14 days for security and
+                debugging. We do not run third-party analytics or advertising trackers.
+              </li>
+            </ul>
+            <p className="mt-3">
+              We do not collect: location, device contacts, photos, microphone or camera input,
+              third-party advertising IDs, or biometric data.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold text-foreground">AI analysis</h2>
-            <p className="mt-2">
-              AI analysis only runs when you request it. When enabled, the diary entry you
-              choose to analyze may be sent to the configured AI provider so MyDiarySkills
-              can suggest skills. Suggestions are not applied until you review and accept them.
+            <h2 className="text-base font-semibold text-foreground">2. How we use your data</h2>
+            <ul className="mt-3 space-y-2 list-disc pl-5">
+              <li>To provide the daily writing surface, calendar, skill dashboard, and export.</li>
+              <li>To authenticate you and protect your account from unauthorized access.</li>
+              <li>To send AI analysis requests, only when you tap Analyze.</li>
+              <li>To respond to your support requests when you write to us.</li>
+            </ul>
+            <p className="mt-3">
+              We do not sell, rent, or trade your data. We do not use your diary content to train
+              AI models.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold text-foreground">Your controls</h2>
-            <p className="mt-2">
-              You can disable AI analysis, export your data, sign out, or delete your account
-              from the app settings. Account deletion removes your account, diary entries,
-              skills, and AI suggestions from the database.
+            <h2 className="text-base font-semibold text-foreground">3. Third parties we share with</h2>
+            <ul className="mt-3 space-y-2.5 list-disc pl-5">
+              <li>
+                <strong className="text-foreground">Groq, Inc.</strong> — when you tap Analyze on a
+                day, that day&apos;s diary text is sent to Groq&apos;s API to generate skill
+                suggestions. Groq processes the request to return a response and does not retain it
+                for training, per their terms. See{" "}
+                <a
+                  className="text-chart-3 hover:underline"
+                  href="https://groq.com/privacy-policy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  groq.com/privacy-policy
+                </a>
+                .
+              </li>
+              <li>
+                <strong className="text-foreground">MongoDB Atlas (MongoDB, Inc.)</strong> — hosts
+                the database where your account, diary, skills, and suggestions are stored. See{" "}
+                <a
+                  className="text-chart-3 hover:underline"
+                  href="https://www.mongodb.com/legal/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  mongodb.com/legal/privacy-policy
+                </a>
+                .
+              </li>
+              <li>
+                <strong className="text-foreground">Vercel, Inc.</strong> — runs the web app and API
+                endpoints. Standard request logs are processed by Vercel. See{" "}
+                <a
+                  className="text-chart-3 hover:underline"
+                  href="https://vercel.com/legal/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  vercel.com/legal/privacy-policy
+                </a>
+                .
+              </li>
+            </ul>
+            <p className="mt-3">
+              We disclose data to law enforcement only when compelled by a valid legal request.
             </p>
           </section>
 
           <section>
-            <h2 className="text-base font-semibold text-foreground">Contact</h2>
+            <h2 className="text-base font-semibold text-foreground">4. Where data is stored</h2>
             <p className="mt-2">
-              For privacy requests or store review questions, contact the developer through
-              the support email listed in App Store Connect or Google Play Console.
+              Account, diary, skills and suggestion data are stored in MongoDB Atlas. The web app
+              is served from Vercel&apos;s edge infrastructure. Your data may be processed in the
+              United States and the European Union depending on the closest available region.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">5. Retention and deletion</h2>
+            <ul className="mt-3 space-y-2 list-disc pl-5">
+              <li>Account data and diary content are kept for as long as your account exists.</li>
+              <li>
+                Sign in to Settings → Privacy and tap <em>Delete account</em>. This permanently
+                erases your account, diary entries, skills, and AI suggestions from our database
+                within 30 days. Backups are rotated within 35 days.
+              </li>
+              <li>
+                You can also export everything as a JSON file at any time from Settings → Privacy.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">6. Your rights</h2>
+            <p className="mt-2">
+              Depending on where you live (notably the EU/EEA, UK, Switzerland, and California), you
+              may have rights to access, correct, export, restrict, or delete your personal data,
+              and to object to processing. The export and delete features above already cover most
+              of these. For anything else, write to{" "}
+              <a className="text-chart-3 hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
+              </a>
+              .
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">7. Children</h2>
+            <p className="mt-2">
+              MyDiarySkills is not directed to children under 13 (or the equivalent minimum age in
+              your jurisdiction). We do not knowingly collect data from children under 13. If you
+              believe a child has signed up, please contact us and we will delete the account.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">8. Security</h2>
+            <p className="mt-2">
+              Passwords are hashed with bcrypt. Sessions use encrypted, HTTP-only, SameSite=Lax
+              cookies. Database connections use TLS. No system is perfectly secure — please use a
+              unique, strong password and contact us at once if you suspect your account has been
+              compromised.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">9. Changes to this policy</h2>
+            <p className="mt-2">
+              If we change this policy materially, we will update the &quot;Last updated&quot; date
+              and, when appropriate, surface a notice in the app.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-foreground">10. Contact</h2>
+            <p className="mt-2">
+              Questions, deletion requests, or store-review queries:{" "}
+              <a className="text-chart-3 hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
+              </a>
+              .
             </p>
           </section>
         </div>
