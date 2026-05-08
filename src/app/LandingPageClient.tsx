@@ -1,4 +1,6 @@
 "use client";
+
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -6,12 +8,17 @@ import { BookOpen, Sparkles, Lock, Calendar } from "lucide-react";
 
 export function LandingPageClient() {
   return (
-    <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-6 py-5">
+    <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground">
-            <BookOpen size={14} />
-          </div>
+          <Image
+            src="/icon-192.png"
+            alt=""
+            width={28}
+            height={28}
+            className="rounded-md"
+            priority
+          />
           <span className="text-sm font-semibold tracking-tight">MyDiarySkills</span>
         </div>
         <nav className="flex items-center gap-2">
@@ -24,7 +31,7 @@ export function LandingPageClient() {
         </nav>
       </header>
 
-      <section className="mx-auto max-w-3xl px-5 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-24 text-center">
+      <section className="mx-auto max-w-3xl px-5 pb-16 pt-12 text-center sm:px-6 sm:pb-24 sm:pt-20">
         <motion.span
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -37,7 +44,7 @@ export function LandingPageClient() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.04, ease: "easeOut" }}
-          className="mt-5 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.05]"
+          className="mt-5 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl"
         >
           Write your day.
           <br />
@@ -50,16 +57,16 @@ export function LandingPageClient() {
           className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground"
         >
           One page per day. Today is editable, yesterday is read-only, tomorrow is locked.
-          Tap Analyze when you're ready — the AI spots what's worth tracking, you validate it.
+          Tap Analyze when you're ready - the AI spots what's worth tracking, you validate it.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.12, ease: "easeOut" }}
-          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+          className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
           <Button size="lg" asChild className="w-full sm:w-auto">
-            <Link href="/auth/signup">Get started ✨</Link>
+            <Link href="/auth/signup">Get started</Link>
           </Button>
           <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
             <Link href="/auth/signin">I already have an account</Link>
@@ -67,7 +74,7 @@ export function LandingPageClient() {
         </motion.div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-4 px-5 sm:px-6 pb-24 sm:grid-cols-2 md:grid-cols-3">
+      <section className="mx-auto grid max-w-5xl gap-4 px-5 pb-24 sm:grid-cols-2 sm:px-6 md:grid-cols-3">
         <Feature
           delay={0.16}
           icon={<BookOpen size={16} />}
@@ -78,7 +85,7 @@ export function LandingPageClient() {
           delay={0.2}
           icon={<Calendar size={16} />}
           title="Locked at midnight"
-          body="Yesterday becomes read-only — what you wrote, you wrote. No retroactive edits."
+          body="Yesterday becomes read-only - what you wrote, you wrote. No retroactive edits."
         />
         <Feature
           delay={0.24}
@@ -89,9 +96,17 @@ export function LandingPageClient() {
       </section>
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-6 py-6 text-xs text-muted-foreground">
-          <span>© MyDiarySkills</span>
-          <span>Private diary · skills as a side-effect</span>
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <span>Copyright MyDiarySkills</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span>Private diary - skills as a side-effect</span>
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              Terms
+            </Link>
+          </div>
         </div>
       </footer>
     </main>

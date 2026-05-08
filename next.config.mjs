@@ -13,9 +13,7 @@ const nextConfig = {
     "192.168.0.0/16",
     "10.0.0.0/8",
   ],
-  experimental: {
-    typedRoutes: false,
-  },
+  typedRoutes: false,
 };
 
 export default nextConfig;
