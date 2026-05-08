@@ -43,6 +43,19 @@ export async function PUT(
     );
   }
 
+  // Once the user has analyzed today's page, it freezes — no more edits.
+  // (The 1-analysis-per-day rule from the product spec.)
+  const existing = await diary.findOne({ userId, dateKey });
+  if (existing?.analyzedAt) {
+    return NextResponse.json(
+      {
+        error: "This page is frozen — you already ran today's analysis.",
+        code: "frozen",
+      },
+      { status: 403 }
+    );
+  }
+
   const now = new Date().toISOString();
   const wc = wordCount(content);
 

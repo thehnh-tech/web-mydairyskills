@@ -7,23 +7,23 @@ import { Button } from "@/components/ui/button";
 const STEPS = [
   {
     emoji: "📓",
-    title: "Une page. Un jour. Voilà.",
-    body: "Pas de feed, pas de notif, pas de stress. Tu écris ce qui s'est passé aujourd'hui — c'est tout. Demain aura sa propre page toute neuve.",
+    title: "One page. One day. That's it.",
+    body: "No feed, no notifications, no pressure. Just write what happened today — tomorrow gets a fresh page of its own.",
   },
   {
     emoji: "🔒",
-    title: "À minuit, ça se verrouille",
-    body: "Hier, c'est figé. Tu peux le relire, mais plus le réécrire. C'est ce qui rend ton journal vraiment honnête sur la durée.",
+    title: "It locks at midnight",
+    body: "Yesterday is frozen. You can read it back, but you can't rewrite it. That's what makes the diary trustworthy over time.",
   },
   {
     emoji: "✨",
-    title: "L'IA repère tes vibes",
-    body: "Quand tu tapes Analyze, l'IA lit ta page et te suggère des skills qu'elle a remarqués. Toi, tu valides ce qui est vrai. Aucune skill ne bouge sans ton OK.",
+    title: "AI catches your vibes",
+    body: "When you tap Analyze, the AI reads your page and proposes skills it noticed. You decide what's real — no skill moves without your OK.",
   },
   {
     emoji: "🛡️",
-    title: "Ton journal, ta propriété",
-    body: "Tout est privé. Tu peux export en JSON ou tout supprimer en un clic. Pas de feed, pas de partage, pas de leaderboard — juste toi et tes pages.",
+    title: "Your diary, your property",
+    body: "Everything is private. Export to JSON or wipe your account in one click. No feed, no sharing, no leaderboard — just you and your pages.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
     <main className="min-h-screen grid place-items-center px-5 sm:px-6">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
-          <span>Étape {step + 1} sur {STEPS.length}</span>
+          <span>Step {step + 1} of {STEPS.length}</span>
           <button
             onClick={() => router.push("/today")}
             className="hover:text-foreground transition-colors"
@@ -90,11 +90,11 @@ export default function OnboardingPage() {
           <div className="flex gap-2">
             {step > 0 && (
               <Button variant="outline" size="sm" onClick={() => setStep(step - 1)}>
-                Retour
+                Back
               </Button>
             )}
             <Button size="sm" onClick={next} disabled={submitting}>
-              {step === STEPS.length - 1 ? (submitting ? "On y va…" : "C'est parti ✨") : "Suivant"}
+              {step === STEPS.length - 1 ? (submitting ? "Loading…" : "Let's go ✨") : "Next"}
             </Button>
           </div>
         </div>

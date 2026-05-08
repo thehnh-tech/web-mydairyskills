@@ -8,14 +8,20 @@ if (!uri) {
   console.warn("[mongo] MONGODB_URI not set; database calls will fail.");
 }
 
-let cached: Promise<MongoClient> | null = null;
+// Survive Next.js HMR / module reloads in dev so we don't open a new
+// connection pool per change (which is what makes the first hit after a save
+// feel slow).
+const globalForMongo = globalThis as unknown as {
+  __mdsMongoClient?: Promise<MongoClient>;
+};
+
 function getClient(): Promise<MongoClient> {
   if (!uri) throw new Error("MONGODB_URI is not configured");
-  if (!cached) {
+  if (!globalForMongo.__mdsMongoClient) {
     const client = new MongoClient(uri, { maxPoolSize: 10 });
-    cached = client.connect();
+    globalForMongo.__mdsMongoClient = client.connect();
   }
-  return cached;
+  return globalForMongo.__mdsMongoClient;
 }
 
 export async function getDb(): Promise<Db> {

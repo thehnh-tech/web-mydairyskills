@@ -1,14 +1,17 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, ShieldCheck, PenLine } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, Sparkles, ShieldCheck, PenLine, ChevronDown, ChevronUp, Lock, AlertTriangle, WifiOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/app/StatusPill";
 import { DiaryEditor } from "@/components/app/DiaryEditor";
 import { AIReviewModal } from "@/components/app/AIReviewModal";
 import { formatLong, shiftDateKey, wordCount } from "@mds/shared";
+import { useOnline } from "@/lib/useOnline";
+
+const DRAFT_PREFIX = "mds_draft_";
 
 type Props = {
   dateKey: string;
@@ -25,18 +28,62 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
   const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [glanceOpen, setGlanceOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const frozen = analyzed;
+  const online = useOnline();
+
+  // On mount, if there's a pending local draft (from a previous offline
+  // session) that's longer than the server content, prefer it.
+  useEffect(() => {
+    if (frozen) return;
+    if (typeof window === "undefined") return;
+    try {
+      const stored = window.localStorage.getItem(DRAFT_PREFIX + dateKey);
+      if (stored && stored.length > content.length) {
+        setContent(stored);
+        setStatus("offline");
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When connection comes back, replay the local draft to the server.
+  useEffect(() => {
+    if (!online || frozen) return;
+    try {
+      const stored = window.localStorage.getItem(DRAFT_PREFIX + dateKey);
+      if (stored && stored !== content) return; // server has newer / different
+      if (stored) {
+        save(stored).catch(() => {});
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, frozen]);
 
   const save = useCallback(
     async (next: string) => {
       setStatus("saving");
+      // Always persist locally first so we don't lose the keystroke if the
+      // network drops between debounce and PUT.
+      try {
+        window.localStorage.setItem(DRAFT_PREFIX + dateKey, next);
+      } catch {}
       try {
         const res = await fetch(`/api/diary/${dateKey}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: next }),
         });
-        setStatus(res.ok ? "saved" : "offline");
+        if (res.ok) {
+          setStatus("saved");
+          try {
+            window.localStorage.removeItem(DRAFT_PREFIX + dateKey);
+          } catch {}
+        } else {
+          setStatus("offline");
+        }
       } catch {
         setStatus("offline");
       }
@@ -45,6 +92,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
   );
 
   function onChange(v: string) {
+    if (frozen) return;
     setContent(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setStatus("saving");
@@ -53,12 +101,22 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
-  async function analyze() {
+  function requestAnalyze() {
     setError(null);
+    if (!online) {
+      setError("You're offline. Reconnect to run an analysis.");
+      return;
+    }
     if (!aiEnabled) {
       setError("AI analysis is disabled. Enable it in Settings → AI.");
       return;
     }
+    if (frozen) return;
+    setConfirmOpen(true);
+  }
+
+  async function confirmAnalyze() {
+    setConfirmOpen(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     await save(content);
     setAnalyzing(true);
@@ -80,6 +138,11 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {!online && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-[12px] font-medium text-amber-700">
+          <WifiOff size={12} /> Offline · changes save locally and sync later
+        </div>
+      )}
       <header className="flex shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:px-6 py-3">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Link href={`/d/${shiftDateKey(dateKey, -1)}`}>
@@ -107,22 +170,39 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
               <h1 className="text-[22px] sm:text-[28px] font-semibold leading-tight tracking-tight">
                 {formatLong(dateKey)}
               </h1>
-              <Badge><PenLine size={11} /> Editable today</Badge>
+              {frozen ? (
+                <Badge variant="blue"><Lock size={11} /> Frozen — analyzed</Badge>
+              ) : (
+                <Badge><PenLine size={11} /> Editable today</Badge>
+              )}
             </div>
             <div className="mb-6 text-[13px] text-muted-foreground">
-              You're writing today's page. It locks at midnight in your timezone.
+              {frozen
+                ? "Today's page is locked because you ran the analysis. Skills are recorded — no more edits today."
+                : "You're writing today's page. It locks at midnight in your timezone, or right after Analyze."}
             </div>
 
-            <DiaryEditor value={content} onChange={onChange} />
+            <DiaryEditor value={content} onChange={onChange} locked={frozen} />
 
             <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-border pt-4">
               <motion.div whileTap={{ scale: 0.97 }}>
-                <Button onClick={analyze} disabled={analyzing || content.trim().length < 20}>
-                  <Sparkles size={14} /> {analyzing ? "Analyzing…" : "Analyze today"}
+                <Button onClick={requestAnalyze} disabled={analyzing || frozen || !online || content.trim().length < 20}>
+                  {analyzing ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={14} />
+                  )}
+                  {analyzing
+                    ? "Analyzing…"
+                    : frozen
+                    ? "Already analyzed"
+                    : !online
+                    ? "Offline"
+                    : "Analyze today"}
                 </Button>
               </motion.div>
               <span className="text-[12.5px] text-muted-foreground">
-                {wc} words · {status === "saved" ? "saved" : status === "saving" ? "saving…" : "will sync"}
+                {wc} words · {frozen ? "frozen" : status === "saved" ? "saved" : status === "saving" ? "saving…" : "will sync"}
               </span>
               <span className="ml-auto text-[12px] text-muted-foreground">
                 {!aiEnabled && (
@@ -145,7 +225,29 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
           </motion.div>
         </div>
 
-        <aside className="scroll w-full lg:w-[304px] shrink-0 overflow-auto border-t lg:border-t-0 lg:border-l border-border bg-background py-6" style={{ paddingLeft: 18, paddingRight: 18 }}>
+        {/* Mobile/tablet: collapsed bar that expands the rail. Hidden on lg+. */}
+        <button
+          type="button"
+          onClick={() => setGlanceOpen((v) => !v)}
+          className="lg:hidden flex items-center justify-between gap-2 border-t border-border bg-background px-5 py-2.5 text-[12.5px] text-muted-foreground"
+          aria-expanded={glanceOpen}
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles size={13} className="text-chart-3" />
+            {wc} words · {totalSkills} skills
+          </span>
+          <span className="flex items-center gap-1">
+            {glanceOpen ? "Hide" : "Details"}
+            {glanceOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </span>
+        </button>
+
+        <aside
+          className={`scroll w-full lg:w-[304px] shrink-0 overflow-auto border-t lg:border-t-0 lg:border-l border-border bg-background py-6 ${
+            glanceOpen ? "block" : "hidden lg:block"
+          }`}
+          style={{ paddingLeft: 18, paddingRight: 18 }}
+        >
           <SectionLabel>At a glance</SectionLabel>
           <div className="mb-3.5 rounded-[var(--radius)] border border-border bg-card p-3.5">
             <div className="grid grid-cols-2 gap-3">
@@ -191,6 +293,51 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
         onClose={() => setSuggestion(null)}
         onAccepted={() => setAnalyzed(true)}
       />
+
+      <AnimatePresence>
+        {confirmOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 backdrop-blur-sm p-4"
+            onClick={() => setConfirmOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 8 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-[var(--radius)] border border-border bg-card p-5 shadow-xl"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-amber-50 text-amber-700">
+                  <AlertTriangle size={16} />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-[15px] font-semibold tracking-tight">
+                    One analysis per day
+                  </h2>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                    Once you run it, today's page locks — no more edits afterwards.
+                    Ready? The AI will read your entry and propose skills.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>
+                  Not yet
+                </Button>
+                <Button size="sm" onClick={confirmAnalyze}>
+                  <Sparkles size={13} /> Run analysis
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

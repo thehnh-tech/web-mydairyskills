@@ -7,7 +7,7 @@ import {
   Sparkles,
   Settings as Cog,
   PenLine,
-  MoreHorizontal,
+  LogOut,
   Menu,
   X,
 } from "lucide-react";
@@ -23,15 +23,32 @@ export function Sidebar() {
   const [days, setDays] = useState<RecentDay[]>([]);
   const [me, setMe] = useState<Me | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  // Fetch profile + recent days once on mount, then refresh recent days only
+  // when the user navigates to a new diary day (not on every sub-route change).
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => alive && setMe(d.user))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setMe(d.user));
-    fetch("/api/diary?limit=6").then((r) => r.json()).then((d) => setDays(d.days || []));
-  }, [pathname]);
+    let alive = true;
+    fetch("/api/diary?limit=6")
+      .then((r) => r.json())
+      .then((d) => alive && setDays(d.days || []))
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [pathname?.startsWith("/d/") || pathname === "/today" ? pathname : ""]);
 
-  // Close drawer on route change
+  // Close drawer / cancel pending sign-out on route change
   useEffect(() => {
     setMobileOpen(false);
+    setConfirmSignOut(false);
   }, [pathname]);
 
   const items = [
@@ -146,21 +163,39 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="mt-auto flex items-center gap-2.5 border-t border-sidebar-border px-2 pt-2.5">
-        <div className="avatar">
-          {(me?.name || me?.email || "•").slice(0, 2).toUpperCase()}
+      <div className="mt-auto flex flex-col gap-2 border-t border-sidebar-border px-2 pt-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="avatar">
+            {(me?.name || me?.email || "•").slice(0, 2).toUpperCase()}
+          </div>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="text-[13px] font-medium truncate">{me?.name || me?.email?.split("@")[0] || "—"}</span>
+            <span className="text-[11px] text-muted-foreground truncate">{me?.email}</span>
+          </div>
         </div>
-        <div className="flex flex-col leading-tight">
-          <span className="text-[13px] font-medium">{me?.name || me?.email?.split("@")[0] || "—"}</span>
-          <span className="text-[11px] text-muted-foreground">{me?.email}</span>
-        </div>
-        <button
-          onClick={signOut}
-          className="ml-auto grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-muted"
-          title="Sign out"
-        >
-          <MoreHorizontal size={14} />
-        </button>
+        {!confirmSignOut ? (
+          <button
+            onClick={() => setConfirmSignOut(true)}
+            className="flex items-center justify-center gap-1.5 rounded-md border border-sidebar-border px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors active:scale-[0.98]"
+          >
+            <LogOut size={13} /> Sign out
+          </button>
+        ) : (
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setConfirmSignOut(false)}
+              className="flex-1 rounded-md border border-sidebar-border px-2 py-1.5 text-[12px] text-muted-foreground hover:bg-sidebar-accent active:scale-[0.98]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={signOut}
+              className="flex-1 rounded-md bg-destructive px-2 py-1.5 text-[12px] font-medium text-destructive-foreground hover:opacity-90 active:scale-[0.98]"
+            >
+              Confirm
+            </button>
+          </div>
+        )}
       </div>
     </aside>
     </>

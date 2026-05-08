@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { Download, ShieldCheck, Sparkles, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ type AIState = {
 };
 
 export function SettingsClient({
-  email, name, timezone, ai, hasGeminiKey, hasGroqKey,
+  email, name, timezone, ai, hasGroqKey,
 }: {
   email: string;
   name: string;
@@ -25,22 +25,27 @@ export function SettingsClient({
   hasGroqKey: boolean;
 }) {
   const router = useRouter();
-  const [state, setState] = useState<AIState>(ai);
+  const [state, setState] = useState<AIState>({ ...ai, provider: "groq" });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function save(next: AIState) {
     setSaving(true);
     setState(next);
-    await fetch("/api/settings/ai", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    setSaving(false);
+    try {
+      await fetch("/api/settings/ai", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...next, provider: "groq" }),
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteAccount() {
+    setDeleting(true);
     await fetch("/api/settings/delete-account", { method: "POST" });
     router.push("/");
   }
@@ -49,7 +54,11 @@ export function SettingsClient({
     <div className="flex h-full flex-col overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-border px-4 sm:px-6 py-3">
         <h1 className="text-[18px] font-semibold tracking-tight">Settings</h1>
-        {saving && <span className="text-[12px] text-muted-foreground">Saving…</span>}
+        {saving && (
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <Loader2 size={12} className="animate-spin" /> Saving…
+          </span>
+        )}
       </header>
 
       <div className="scroll flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
@@ -63,7 +72,7 @@ export function SettingsClient({
           <Section
             title="AI analysis"
             icon={<Sparkles size={14} className="text-chart-3" />}
-            description="On by default. The AI only looks at your diary when you hit Analyze, and every suggestion goes through review — nothing auto-applies."
+            description="On by default. The AI only looks at your diary when you tap Analyze, and every suggestion goes through review — nothing auto-applies."
           >
             <Toggle
               label="AI analysis"
@@ -76,30 +85,17 @@ export function SettingsClient({
               onChange={(v) => save({ ...state, enabled: v })}
             />
 
-            <div className="space-y-1.5">
-              <div className="text-[13px] font-medium">Provider</div>
-              <div className="flex flex-col gap-2">
-                <ProviderRow
-                  selected={state.provider === "groq"}
-                  onClick={() => save({ ...state, provider: "groq" })}
-                  title="Groq (default · fast)"
-                  badge={hasGroqKey ? <Badge variant="green">Configured</Badge> : <Badge variant="amber">Set GROQ_API_KEY</Badge>}
-                  body="Default. Llama 3.3 70B with strict JSON output. Free tier, sub-second responses."
-                />
-                <ProviderRow
-                  selected={state.provider === "gemini"}
-                  onClick={() => save({ ...state, provider: "gemini" })}
-                  title="Google Gemini"
-                  badge={hasGeminiKey ? <Badge variant="green">Configured</Badge> : <Badge variant="amber">Set GEMINI_API_KEY</Badge>}
-                  body="Backup provider. JSON-mode prompt with strict schema."
-                />
-                <ProviderRow
-                  selected={state.provider === "mock"}
-                  onClick={() => save({ ...state, provider: "mock" })}
-                  title="Mock provider (offline)"
-                  badge={<Badge>Always available</Badge>}
-                  body="Deterministic local provider. Useful for demos and testing the review flow."
-                />
+            <div className="rounded-[var(--radius)] border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[13.5px] font-medium">Provider · Groq</div>
+                {hasGroqKey ? (
+                  <Badge variant="green">Configured</Badge>
+                ) : (
+                  <Badge variant="amber">Set GROQ_API_KEY</Badge>
+                )}
+              </div>
+              <div className="mt-1 text-[12px] text-muted-foreground">
+                Llama 3.3 70B with strict JSON output. Free tier, sub-second responses.
               </div>
             </div>
 
@@ -133,10 +129,20 @@ export function SettingsClient({
                   <Trash2 size={14} /> Delete account
                 </Button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[13px] text-muted-foreground">Delete diary, skills, suggestions and account?</span>
-                  <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-                  <Button size="sm" variant="destructive" onClick={deleteAccount}>Delete forever</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={deleteAccount} disabled={deleting}>
+                    {deleting ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" /> Deleting…
+                      </>
+                    ) : (
+                      "Delete forever"
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
@@ -186,24 +192,5 @@ function Toggle({
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
-  );
-}
-
-function ProviderRow({
-  selected, onClick, title, body, badge,
-}: { selected: boolean; onClick: () => void; title: string; body: string; badge: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`text-left rounded-[var(--radius)] border p-3 transition-colors ${
-        selected ? "border-chart-3 bg-[#eff6ff]/40" : "border-border bg-background hover:bg-muted/40"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="text-[13.5px] font-medium">{title}</div>
-        {badge}
-      </div>
-      <div className="mt-1 text-[12px] text-muted-foreground">{body}</div>
-    </button>
   );
 }

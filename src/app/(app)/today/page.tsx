@@ -13,8 +13,10 @@ export default async function TodayPage() {
 
   const tz = user.timezone || "UTC";
   const dateKey = todayKey(tz);
-  const entry = await diary.findOne({ userId, dateKey });
-  const skillCount = await skills.countDocuments({ userId });
+  const [entry, skillCount] = await Promise.all([
+    diary.findOne({ userId, dateKey }),
+    skills.countDocuments({ userId }),
+  ]);
 
   return (
     <TodayClient
