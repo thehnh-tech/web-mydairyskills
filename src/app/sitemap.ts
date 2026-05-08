@@ -5,7 +5,7 @@ const lastModified = new Date("2026-05-08");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
-  const pages = ["/", "/auth/signin", "/auth/signup", "/privacy", "/terms"];
+  const pages = ["/", "/auth/signin", "/auth/signup", "/privacy", "/terms", "/delete-account"];
 
   return pages.map((path) => ({
     url: new URL(path, siteUrl).toString(),
