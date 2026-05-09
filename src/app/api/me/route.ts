@@ -9,26 +9,22 @@ export async function GET() {
   const user = await users.findOne({ _id: new ObjectId(session.userId) });
   if (!user) return NextResponse.json({ user: null });
 
-  // One-shot migration: existing users created before AI-on-by-default get
-  // flipped to enabled=true unless they explicitly opted out (lastConsentedAt set).
-  const needsMigration =
-    !user.ai ||
-    (user.ai.enabled === false && !user.ai.lastConsentedAt) ||
-    user.ai.provider === "gemini";
-  if (needsMigration) {
+  // Backfill the `ai` sub-document only if it's completely missing (legacy
+  // accounts created before AI was a first-class field). NEVER override an
+  // existing `ai` object — disabling AI in Settings writes
+  // `lastConsentedAt: null`, and treating that as "needs migration" would
+  // silently re-enable AI on the user's behalf, breaking opt-out.
+  if (!user.ai) {
     const now = new Date().toISOString();
-    const migrated = {
+    const seeded = {
       enabled: true,
       provider: "groq" as const,
       shareTextWithProvider: true,
-      retainHistory: user.ai?.retainHistory ?? true,
-      lastConsentedAt: user.ai?.lastConsentedAt || now,
+      retainHistory: true,
+      lastConsentedAt: now,
     };
-    await users.updateOne(
-      { _id: user._id },
-      { $set: { ai: migrated } }
-    );
-    user.ai = migrated;
+    await users.updateOne({ _id: user._id }, { $set: { ai: seeded } });
+    user.ai = seeded;
   }
 
   return NextResponse.json({

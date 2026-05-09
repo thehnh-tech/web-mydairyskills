@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
   // Hard gate: AI requires explicit consent recorded in settings.
-  if (!user.ai.enabled) {
+  if (!user.ai?.enabled) {
     return NextResponse.json(
       { error: "AI analysis is disabled. Enable it in Settings → AI." },
       { status: 403 }
@@ -32,8 +32,37 @@ export async function POST(req: Request) {
     );
   }
 
+  // Server-side enforcement of "one analysis per day". Two states block:
+  //   1) The day was already analyzed and skills accepted (analyzedAt set).
+  //   2) A pending suggestion exists awaiting review — running another would
+  //      double-bill the provider and let the user double-apply skills.
+  if (entry.analyzedAt) {
+    return NextResponse.json(
+      { error: "Today's page is already analyzed and frozen.", code: "already-analyzed" },
+      { status: 409 }
+    );
+  }
+  const pending = await suggestions.findOne({ userId, dateKey, status: "pending" });
+  if (pending) {
+    return NextResponse.json(
+      {
+        error: "An analysis is already pending. Review or reject it first.",
+        code: "pending",
+        suggestionId: pending._id?.toString(),
+      },
+      { status: 409 }
+    );
+  }
+
+  // Privacy gate: if the user has explicitly chosen NOT to share their entry
+  // text with the AI provider, force the offline mock provider so diary
+  // content never leaves our infrastructure. This matches the privacy copy:
+  // "If off, you'll only see template suggestions."
+  const providerName =
+    user.ai.shareTextWithProvider === false ? "mock" : user.ai.provider;
+  const provider = getAIProvider(providerName);
+
   const existingSkills = await skills.find({ userId }).toArray();
-  const provider = getAIProvider(user.ai.provider);
 
   let result;
   try {
@@ -56,19 +85,26 @@ export async function POST(req: Request) {
     );
   }
 
+  // Storage gate: when retainHistory=false, persist only the bare minimum
+  // needed to enforce one-per-day and to wire the review flow (status,
+  // provider, dates). The full payload is still returned to the client so
+  // the user can review and accept — the review route uses the client-sent
+  // items, not the stored doc.
   const now = new Date().toISOString();
-  const inserted = await suggestions.insertOne({
+  const retain = user.ai.retainHistory !== false;
+  const docPayload = {
     userId,
     dateKey,
     provider: provider.name,
-    summary: result.summary,
-    newSkills: result.newSkills,
-    upgradedSkills: result.upgradedSkills,
-    ignored: result.ignored,
-    status: "pending",
+    summary: retain ? result.summary : "",
+    newSkills: retain ? result.newSkills : [],
+    upgradedSkills: retain ? result.upgradedSkills : [],
+    ignored: retain ? result.ignored : [],
+    status: "pending" as const,
     createdAt: now,
     reviewedAt: null,
-  });
+  };
+  const inserted = await suggestions.insertOne(docPayload);
 
   return NextResponse.json({
     id: inserted.insertedId.toString(),
