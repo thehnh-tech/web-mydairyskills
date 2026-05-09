@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/app/StatusPill";
 import { DiaryEditor } from "@/components/app/DiaryEditor";
-import { AIReviewModal } from "@/components/app/AIReviewModal";
+import { SkillsUpdatedModal } from "@/components/app/AIReviewModal";
 import { formatLong, shiftDateKey, wordCount } from "@mds/shared";
 import { useOnline } from "@/lib/useOnline";
 
@@ -17,14 +17,24 @@ type Props = {
   dateKey: string;
   initialContent: string;
   initialAnalyzed: boolean;
+  initialAIProvider: string | null;
   aiEnabled: boolean;
   totalSkills: number;
 };
 
-export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnabled, totalSkills }: Props) {
+export function TodayClient({
+  dateKey,
+  initialContent,
+  initialAnalyzed,
+  initialAIProvider,
+  aiEnabled,
+  totalSkills,
+}: Props) {
   const [content, setContent] = useState(initialContent);
   const [status, setStatus] = useState<"saved" | "saving" | "offline">("saved");
   const [analyzed, setAnalyzed] = useState(initialAnalyzed);
+  const [skillCount, setSkillCount] = useState(totalSkills);
+  const [lastAIProvider, setLastAIProvider] = useState<string | null>(initialAIProvider);
   const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +141,9 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
       setError(data.error || "Analysis failed");
       return;
     }
+    setLastAIProvider(data.provider || null);
+    setSkillCount((count) => count + (Number(data.createdCount) || 0));
+    setAnalyzed(true);
     setSuggestion(data);
   }
 
@@ -204,6 +217,11 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
               <span className="text-[12.5px] text-muted-foreground">
                 {wc} words · {frozen ? "frozen" : status === "saved" ? "saved" : status === "saving" ? "saving…" : "will sync"}
               </span>
+              {lastAIProvider && (
+                <span className="text-[11.5px] text-muted-foreground">
+                  AI used: <span className="font-mono">{lastAIProvider}</span>
+                </span>
+              )}
               <span className="ml-auto text-[12px] text-muted-foreground">
                 {!aiEnabled && (
                   <Link href="/settings" className="text-chart-3 hover:underline">
@@ -234,7 +252,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
         >
           <span className="flex items-center gap-2">
             <Sparkles size={13} className="text-chart-3" />
-            {wc} words · {totalSkills} skills
+            {wc} words · {skillCount} skills
           </span>
           <span className="flex items-center gap-1">
             {glanceOpen ? "Hide" : "Details"}
@@ -252,7 +270,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
           <div className="mb-3.5 rounded-[var(--radius)] border border-border bg-card p-3.5">
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Words today" value={String(wc)} sub="goal 200" />
-              <Stat label="Total skills" value={String(totalSkills)} sub="across categories" />
+              <Stat label="Total skills" value={String(skillCount)} sub="across categories" />
             </div>
           </div>
 
@@ -269,7 +287,12 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
             </div>
           ) : (
             <div className="rounded-[var(--radius)] border border-border bg-card p-4 text-[13px] text-muted-foreground">
-              Today's skills are recorded in <Link href="/skills" className="text-chart-3 hover:underline">Skills</Link>.
+              Today's skills were applied by the AI in <Link href="/skills" className="text-chart-3 hover:underline">Skills</Link>.
+              {lastAIProvider && (
+                <span className="mt-1 block text-[11px]">
+                  AI used: <span className="font-mono">{lastAIProvider}</span>
+                </span>
+              )}
             </div>
           )}
 
@@ -279,7 +302,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
             <div className="flex gap-2.5">
               <ShieldCheck size={14} className="mt-0.5 shrink-0 text-chart-3" />
               <div>
-                Your diary is private. Running analysis sends today's text to Gemini, with Groq or local templates as fallback.{" "}
+                Your diary is private. Analysis follows your AI settings; if external text sharing is off, local templates are used.{" "}
                 <Link href="/settings" className="text-chart-3 hover:underline">Manage</Link>
               </div>
             </div>
@@ -287,11 +310,10 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
         </aside>
       </div>
 
-      <AIReviewModal
+      <SkillsUpdatedModal
         suggestion={suggestion}
         open={!!suggestion}
         onClose={() => setSuggestion(null)}
-        onAccepted={() => setAnalyzed(true)}
       />
 
       <AnimatePresence>
@@ -322,7 +344,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
                   </h2>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                     Once you run it, today's page locks — no more edits afterwards.
-                    Ready? The AI will read your entry and propose skills.
+                    Ready? The AI will read your entry and update your skills.
                   </p>
                 </div>
               </div>

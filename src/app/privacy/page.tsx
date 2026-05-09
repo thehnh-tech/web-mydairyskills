@@ -53,8 +53,8 @@ export default function PrivacyPage() {
                 progress, descriptions you accept after AI review.
               </li>
               <li>
-                <strong className="text-foreground">AI suggestion history:</strong> raw AI proposals
-                attached to a date, kept so you can review and audit them. You can disable this in
+                <strong className="text-foreground">AI update history:</strong> raw AI skill updates
+                attached to a date, kept so you can audit them. You can disable this in
                 Settings → AI analysis (&quot;Retain analysis history&quot;).
               </li>
               <li>

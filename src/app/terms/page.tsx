@@ -85,11 +85,11 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-semibold text-foreground">5. AI suggestions</h2>
+            <h2 className="text-base font-semibold text-foreground">5. AI skill updates</h2>
             <p className="mt-2">
               AI analysis is optional and runs only when you tap Analyze on today&apos;s page. AI
               outputs are best-effort and may be inaccurate, biased, or incomplete. Skill
-              suggestions are stored only after you review and accept them. After running an
+              updates are applied automatically by the AI after analysis. After running an
               analysis, today&apos;s page is locked to keep the diary trustworthy over time — you
               can disable AI analysis at any time in Settings.
             </p>

@@ -54,6 +54,7 @@ export type DiaryDoc = {
   wordCount: number;
   status: "draft" | "saved" | "locked";
   analyzedAt: string | null;
+  analyzedProvider?: string | null;
   createdAt: string;
   updatedAt: string;
 };

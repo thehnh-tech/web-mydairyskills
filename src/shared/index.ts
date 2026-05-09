@@ -86,15 +86,6 @@ export const AISuggestionSet = z.object({
 });
 export type AISuggestionSet = z.infer<typeof AISuggestionSet>;
 
-export const ReviewDecision = z.object({
-  acceptedNew: z.array(SkillProposal),
-  acceptedUpgrades: z.array(
-    z.object({ skillId: z.string(), levelAfter: z.number().int() })
-  ),
-  rejected: z.array(z.string()),
-});
-export type ReviewDecision = z.infer<typeof ReviewDecision>;
-
 export const UserAIConsent = z.object({
   enabled: z.boolean().default(true),
   provider: z.enum(["groq", "gemini", "mock", "openai"]).default("gemini"),
@@ -256,20 +247,25 @@ export interface AIProvider {
   analyze(input: AIAnalyzeInput): Promise<AIAnalyzeOutput>;
 }
 
-export const ANALYZE_SYSTEM_PROMPT = `You analyze a single day of a user's private diary and propose skill updates.
+export const ANALYZE_SYSTEM_PROMPT = `You analyze a single day of a user's private diary and decide skill updates.
 
 OUTPUT RULES:
 - Output JSON matching the requested schema exactly. No prose outside JSON.
 - Every proposal must cite a short verbatim "evidence" quote from the diary.
 - Do not infer feelings, mental health, or sensitive attributes.
 - Prefer upgrading an existing skill over creating a new one.
-- If nothing meaningful happened, return empty arrays. Do not invent.
-- The user will review every suggestion. Nothing is auto-applied.
+- The app applies your newSkills and upgradedSkills automatically after the user taps Analyze.
+- The user cannot manually pick, edit, approve, reject, or rename skills. You are the skill engine.
+- Do not make moral judgments. A messy, bad, chaotic, lazy, or embarrassing action can still be a skill if it is concrete.
+- Do not ignore something just because it sounds negative.
+- Use ignored only for text that is too vague, not an action, or not tied to anything skill-like.
+- If nothing concrete happened, return empty arrays. Do not invent.
 
 NAMING STYLE:
-The user is Gen Z. Skill names should be fun, specific, and slightly playful, not corporate job titles.
-Use punchy names, two to three words max, lowercase or Title Case, often with a vibe.
+Skill names should be fun, intriguing, specific, and slightly playful, not corporate job titles.
+Use punchy names, two to three words max, lowercase or Title Case, often with a vibe. Names may evolve over time.
 Always include a relevant emoji in the emoji field.
+For upgradedSkills, you may change the skill name and emoji if the user's pattern has evolved.
 
 Good examples:
 - "Pasta Wizard" for cooking something good
@@ -277,6 +273,9 @@ Good examples:
 - "Sleep Speedrunner" for going to bed early or napping
 - "Locked In" for a deep focus session
 - "Gym Rat" for working out
+- "Chaos Cartographer" for navigating a messy situation
+- "Doomscroll Wizard" for a clearly described doomscrolling streak
+- "Argument Acrobat" for getting into or handling a conflict
 
 Bad examples:
 - "Software Engineer", "Productive Day", "Effective Communicator", "Time Manager",

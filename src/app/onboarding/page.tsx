@@ -8,7 +8,7 @@ const STEPS = [
   {
     emoji: "📓",
     title: "One page. One day. That's it.",
-    body: "No feed, no notifications, no pressure. Just write what happened today — tomorrow gets a fresh page of its own.",
+    body: "No feed, no notifications, no pressure. Just write what happened today. Tomorrow gets a fresh page of its own.",
   },
   {
     emoji: "🔒",
@@ -18,12 +18,12 @@ const STEPS = [
   {
     emoji: "✨",
     title: "AI catches your vibes",
-    body: "When you tap Analyze, the AI reads your page and proposes skills it noticed. You decide what's real — no skill moves without your OK.",
+    body: "When you tap Analyze, the AI reads your page and updates the skills it noticed. You write; the AI handles the skill system.",
   },
   {
     emoji: "🛡️",
     title: "Your diary, your property",
-    body: "Everything is private. Export to JSON or wipe your account in one click. No feed, no sharing, no leaderboard — just you and your pages.",
+    body: "Everything is private. Export to JSON or wipe your account in one click. No feed, no sharing, no leaderboard - just you and your pages.",
   },
 ];
 
@@ -44,15 +44,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-5 sm:px-6">
+    <main className="grid min-h-screen place-items-center px-5 sm:px-6">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-muted-foreground">
           <span>Step {step + 1} of {STEPS.length}</span>
           <button
             onClick={() => router.push("/today")}
-            className="hover:text-foreground transition-colors"
+            className="transition-colors hover:text-foreground"
           >
-            Skip →
+            Skip
           </button>
         </div>
 
@@ -67,7 +67,7 @@ export default function OnboardingPage() {
               className="p-7"
             >
               <div className="text-4xl">{Step.emoji}</div>
-              <h1 className="mt-4 text-[22px] font-semibold tracking-tight leading-tight">{Step.title}</h1>
+              <h1 className="mt-4 text-[22px] font-semibold leading-tight tracking-tight">{Step.title}</h1>
               <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted-foreground">{Step.body}</p>
             </motion.div>
           </AnimatePresence>
@@ -94,7 +94,7 @@ export default function OnboardingPage() {
               </Button>
             )}
             <Button size="sm" onClick={next} disabled={submitting}>
-              {step === STEPS.length - 1 ? (submitting ? "Loading…" : "Let's go ✨") : "Next"}
+              {step === STEPS.length - 1 ? (submitting ? "Loading..." : "Let's go") : "Next"}
             </Button>
           </div>
         </div>

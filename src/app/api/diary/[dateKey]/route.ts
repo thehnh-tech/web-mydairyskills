@@ -80,6 +80,7 @@ function serializeEntry(d: any) {
     wordCount: d.wordCount,
     status: d.status,
     analyzedAt: d.analyzedAt,
+    analyzedProvider: d.analyzedProvider || null,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
   };

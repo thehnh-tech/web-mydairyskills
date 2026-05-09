@@ -119,5 +119,5 @@ Diary content:
 ${input.content}
 """
 
-Return JSON exactly matching the schema. Reuse skillId values from the list above for upgrades.`;
+Return JSON exactly matching the schema. Reuse skillId values from the list above for upgrades. The app applies your returned skill changes automatically, so decide directly. Good, bad, messy, or chaotic actions can all become skills when the diary gives concrete evidence.`;
 }

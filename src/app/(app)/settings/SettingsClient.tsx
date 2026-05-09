@@ -111,7 +111,7 @@ export function SettingsClient({
             />
             <Toggle
               label="Retain analysis history"
-              hint="Keeps a record of past suggestions. Off = we only store accepted skill changes."
+              hint="Keeps a record of past AI updates. Off = we only store the skill changes that were applied."
               checked={state.retainHistory}
               onChange={(v) => save({ ...state, retainHistory: v })}
             />

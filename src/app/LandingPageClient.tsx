@@ -57,7 +57,7 @@ export function LandingPageClient() {
           className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground"
         >
           One page per day. Today is editable, yesterday is read-only, tomorrow is locked.
-          Tap Analyze when you're ready - the AI spots what's worth tracking, you validate it.
+          Tap Analyze when you're ready - the AI spots what happened and updates your skills.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -90,8 +90,8 @@ export function LandingPageClient() {
         <Feature
           delay={0.24}
           icon={<Lock size={16} />}
-          title="You validate every skill"
-          body="The AI proposes, you decide. No skill updates without your explicit OK."
+          title="AI-managed skills"
+          body="You write the diary. The AI creates, renames, and levels skills from what it sees."
         />
       </section>
 

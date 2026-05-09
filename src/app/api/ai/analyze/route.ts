@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { entriesForNextLevel, normalizeSkillName } from "@mds/shared";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getAIProvider, hasGroqFallback, isQuotaLikeError } from "@/lib/ai";
@@ -7,6 +8,8 @@ import { getAIProvider, hasGroqFallback, isQuotaLikeError } from "@/lib/ai";
 const Body = z.object({
   dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
+
+const CATEGORIES = new Set(["Life", "Code", "Study", "Body", "Practice", "Social", "Work"]);
 
 export async function POST(req: Request) {
   const { userId } = await requireUser();
@@ -16,10 +19,9 @@ export async function POST(req: Request) {
   const user = await users.findOne({ _id: new ObjectId(userId) });
   if (!user) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
-  // Hard gate: AI requires explicit consent recorded in settings.
   if (!user.ai?.enabled) {
     return NextResponse.json(
-      { error: "AI analysis is disabled. Enable it in Settings → AI." },
+      { error: "AI analysis is disabled. Enable it in Settings > AI." },
       { status: 403 }
     );
   }
@@ -32,35 +34,35 @@ export async function POST(req: Request) {
     );
   }
 
-  // Server-side enforcement of "one analysis per day". Two states block:
-  //   1) The day was already analyzed and skills accepted (analyzedAt set).
-  //   2) A pending suggestion exists awaiting review — running another would
-  //      double-bill the provider and let the user double-apply skills.
   if (entry.analyzedAt) {
     return NextResponse.json(
       { error: "Today's page is already analyzed and frozen.", code: "already-analyzed" },
       { status: 409 }
     );
   }
+
+  // Legacy pending suggestions from the old review flow are applied
+  // automatically now. The product rule is: the AI decides; users do not
+  // manually approve, reject, or cherry-pick skills.
   const pending = await suggestions.findOne({ userId, dateKey, status: "pending" });
   if (pending) {
-    return NextResponse.json(
-      {
-        error: "An analysis is already pending. Review or reject it first.",
-        code: "pending",
-        suggestionId: pending._id?.toString(),
-      },
-      { status: 409 }
+    const now = new Date().toISOString();
+    const restored = {
+      summary: pending.summary || "",
+      newSkills: Array.isArray(pending.newSkills) ? pending.newSkills : [],
+      upgradedSkills: Array.isArray(pending.upgradedSkills) ? pending.upgradedSkills : [],
+      ignored: [],
+    };
+    const applied = await applySkillUpdates(skills, userId, restored, now);
+    await suggestions.updateOne(
+      { _id: pending._id! },
+      { $set: { status: "reviewed", reviewedAt: now } }
     );
+    await markDiaryAnalyzed(diary, userId, dateKey, pending.provider || "ai", now);
+    return analysisResponse(pending._id!.toString(), pending.provider || "ai", restored, applied);
   }
 
-  // Privacy gate: if the user has explicitly chosen NOT to share their entry
-  // text with the AI provider, force the offline mock provider so diary
-  // content never leaves our infrastructure. This matches the privacy copy:
-  // "If off, you'll only see template suggestions."
-  const providerName =
-    user.ai.shareTextWithProvider === false ? "mock" : "gemini";
-
+  const providerName = user.ai.shareTextWithProvider === false ? "mock" : "gemini";
   const existingSkills = await skills.find({ userId }).toArray();
   const input = {
     dateKey,
@@ -79,11 +81,7 @@ export async function POST(req: Request) {
   if (provider.name === "gemini") {
     const reservation = await reserveGeminiRequest(aiUsage);
     if (!reservation.allowed) {
-      if (hasGroqFallback()) {
-        provider = getAIProvider("groq");
-      } else {
-        provider = getAIProvider("mock");
-      }
+      provider = hasGroqFallback() ? getAIProvider("groq") : getAIProvider("mock");
     }
   }
 
@@ -125,14 +123,10 @@ export async function POST(req: Request) {
     }
   }
 
-  // Storage gate: when retainHistory=false, persist only the bare minimum
-  // needed to enforce one-per-day and to wire the review flow (status,
-  // provider, dates). The full payload is still returned to the client so
-  // the user can review and accept — the review route uses the client-sent
-  // items, not the stored doc.
   const now = new Date().toISOString();
+  const applied = await applySkillUpdates(skills, userId, result, now);
   const retain = user.ai.retainHistory !== false;
-  const docPayload = {
+  const inserted = await suggestions.insertOne({
     userId,
     dateKey,
     provider: provider.name,
@@ -140,20 +134,132 @@ export async function POST(req: Request) {
     newSkills: retain ? result.newSkills : [],
     upgradedSkills: retain ? result.upgradedSkills : [],
     ignored: retain ? result.ignored : [],
-    status: "pending" as const,
+    status: "reviewed" as const,
     createdAt: now,
-    reviewedAt: null,
-  };
-  const inserted = await suggestions.insertOne(docPayload);
-
-  return NextResponse.json({
-    id: inserted.insertedId.toString(),
-    provider: provider.name,
-    summary: result.summary,
-    newSkills: result.newSkills,
-    upgradedSkills: result.upgradedSkills,
-    ignored: result.ignored,
+    reviewedAt: now,
   });
+
+  await markDiaryAnalyzed(diary, userId, dateKey, provider.name, now);
+  return analysisResponse(inserted.insertedId.toString(), provider.name, result, applied);
+}
+
+async function applySkillUpdates(skills: any, userId: string, result: any, now: string) {
+  const created: any[] = [];
+  const upgraded: any[] = [];
+  const existing = await skills.find({ userId }).toArray();
+  const byName = new Map(existing.map((s: any) => [normalizeSkillName(s.name), s]));
+
+  for (const proposal of result.newSkills || []) {
+    const normalized = normalizeSkillName(proposal.name);
+    const duplicate = byName.get(normalized);
+    if (duplicate) {
+      const updated = await applyExistingSkill(skills, duplicate, proposal, now);
+      upgraded.push(updated);
+      byName.set(normalized, updated);
+      continue;
+    }
+
+    const doc = {
+      userId,
+      name: cleanText(proposal.name, "Mystery Skill", 60),
+      emoji: cleanText(proposal.emoji, "*", 8),
+      category: cleanCategory(proposal.category),
+      description: cleanText(proposal.description || proposal.evidence, "", 280),
+      level: 1,
+      progress: Math.min(1, 1 / entriesForNextLevel(1)),
+      entries: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const inserted = await skills.insertOne(doc);
+    created.push({ id: inserted.insertedId.toString(), ...doc });
+    byName.set(normalized, { ...doc, _id: inserted.insertedId });
+  }
+
+  for (const upgrade of result.upgradedSkills || []) {
+    let current = null;
+    try {
+      current = await skills.findOne({ _id: new ObjectId(upgrade.skillId), userId });
+    } catch {}
+    if (!current) continue;
+    upgraded.push(await applyExistingSkill(skills, current, upgrade, now));
+  }
+
+  return { created, upgraded };
+}
+
+async function applyExistingSkill(skills: any, current: any, update: any, now: string) {
+  const previousLevel = Number(current.level) || 1;
+  const levelAfter = Math.max(previousLevel, Number(update.levelAfter) || previousLevel);
+  const progress = Math.min(1, (Number(current.progress) || 0) + 1 / entriesForNextLevel(levelAfter));
+  const next = {
+    name: cleanText(update.name, current.name, 60),
+    emoji: cleanText(update.emoji, current.emoji || "*", 8),
+    description: cleanText(
+      update.reason || update.description || current.description,
+      current.description || "",
+      280
+    ),
+    level: levelAfter,
+    progress,
+    updatedAt: now,
+  };
+  await skills.updateOne(
+    { _id: current._id, userId: current.userId },
+    { $set: next, $inc: { entries: 1 } }
+  );
+  return {
+    id: current._id?.toString(),
+    ...next,
+    category: current.category,
+    entries: (Number(current.entries) || 0) + 1,
+    levelBefore: previousLevel,
+    evidence: update.evidence || "",
+    reason: update.reason || update.description || "",
+  };
+}
+
+function analysisResponse(id: string, provider: string, result: any, applied: any) {
+  return NextResponse.json({
+    id,
+    provider,
+    summary: result.summary,
+    newSkills: applied.created,
+    upgradedSkills: applied.upgraded,
+    createdCount: applied.created.length,
+    upgradedCount: applied.upgraded.length,
+    ignored: [],
+  });
+}
+
+async function markDiaryAnalyzed(
+  diary: any,
+  userId: string,
+  dateKey: string,
+  provider: string,
+  now: string
+) {
+  await diary.updateOne(
+    { userId, dateKey },
+    {
+      $set: {
+        analyzedAt: now,
+        analyzedProvider: provider,
+        status: "locked",
+        updatedAt: now,
+      },
+    }
+  );
+}
+
+function cleanText(value: unknown, fallback: string, max: number) {
+  const text = String(value || fallback).trim() || fallback;
+  return text.slice(0, max);
+}
+
+function cleanCategory(value: unknown) {
+  const text = String(value || "Practice");
+  return CATEGORIES.has(text) ? text : "Practice";
 }
 
 function utcDateKey(date = new Date()): string {

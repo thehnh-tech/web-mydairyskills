@@ -19,6 +19,7 @@ export async function GET(req: Request) {
       excerpt: excerpt(d.content),
       wordCount: d.wordCount,
       analyzedAt: d.analyzedAt,
+      analyzedProvider: d.analyzedProvider || null,
     })),
   });
 }

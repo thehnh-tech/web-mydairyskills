@@ -1,7 +1,7 @@
 export const SITE_NAME = "MyDiarySkills";
 
 export const SITE_DESCRIPTION =
-  "A private daily diary that turns reflection into skills with user-controlled AI review.";
+  "A private daily diary where AI turns reflection into evolving skills.";
 
 export function getSiteUrl(): URL {
   const raw =

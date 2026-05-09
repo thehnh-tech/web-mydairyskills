@@ -23,6 +23,7 @@ export default async function TodayPage() {
       dateKey={dateKey}
       initialContent={entry?.content || ""}
       initialAnalyzed={!!entry?.analyzedAt}
+      initialAIProvider={entry?.analyzedProvider || null}
       aiEnabled={user.ai.enabled}
       totalSkills={skillCount}
     />

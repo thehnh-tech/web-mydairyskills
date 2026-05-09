@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SkillEditor } from "./SkillEditor";
 
 export default async function SkillDetailPage({
   params,
@@ -51,12 +50,21 @@ export default async function SkillDetailPage({
           </div>
 
           <div className="mt-8 rounded-[var(--radius)] border border-border bg-card p-5">
-            <SkillEditor
-              id={skill._id.toString()}
-              name={skill.name}
-              description={skill.description}
-              emoji={skill.emoji}
-            />
+            <div className="flex gap-3">
+              <Sparkles size={16} className="mt-0.5 shrink-0 text-chart-3" />
+              <div>
+                <div className="text-[13.5px] font-medium">AI-managed skill</div>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+                  Skills cannot be edited manually. Keep writing daily pages; the AI can rename,
+                  reshape, and level this skill when future entries point that way.
+                </p>
+              </div>
+            </div>
+            {skill.description && (
+              <div className="mt-5 rounded-md bg-muted/50 p-3 text-[13px] leading-relaxed text-muted-foreground">
+                {skill.description}
+              </div>
+            )}
           </div>
         </div>
       </div>

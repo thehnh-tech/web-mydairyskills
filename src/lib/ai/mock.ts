@@ -15,6 +15,8 @@ export function mockProvider(): AIProvider {
         { match: /\b(stud(y|ied)|calculus|math|read(ing)?|chapter)\b/, name: "Calculus Grinder", emoji: "🧠", category: "Study", reason: "Sustained study session." },
         { match: /\b(ran|run(ning)?|jog|walk(ed)?|hike)\b/, name: "Morning Runner", emoji: "🏃", category: "Body", reason: "Moved the body." },
         { match: /\b(wrote|journal|diary|page)\b/, name: "Diary Devotee", emoji: "📖", category: "Practice", reason: "Showed up to the page." },
+        { match: /\b(procrastinat(ed|ing)?|doomscroll(ed|ing)?|wasted time|late again)\b/, name: "Procrastination Wizard", emoji: "⏳", category: "Practice", reason: "Turned a messy pattern into trackable self-knowledge." },
+        { match: /\b(argu(ed|ing)|fight|conflict|drama)\b/, name: "Argument Acrobat", emoji: "🎭", category: "Social", reason: "Handled or entered a conflict." },
       ];
 
       for (const t of triggers) {
@@ -47,13 +49,6 @@ export function mockProvider(): AIProvider {
             confidence: 0.6,
           });
         }
-      }
-
-      if (text.includes("never doing that again") || text.includes("regret")) {
-        ignored.push({
-          text: "self-criticism in the entry",
-          reason: "Self-criticism, not a skill.",
-        });
       }
 
       return {
