@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { collections, ensureIndexes } from "@/lib/mongo";
 import { getSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const Body = z.object({
   email: z.string().email(),
@@ -12,6 +13,25 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
+  // Sign-up is more expensive (bcrypt + insert + index ensure). Cap to 5
+  // accounts per IP per hour, then a 1-hour lockout. Discourages drive-by
+  // mass-account creation.
+  const limit = rateLimit({
+    key: clientKey(req, "signup"),
+    windowMs: 60 * 60_000,
+    max: 5,
+    blockMs: 60 * 60_000,
+  });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many signups from this network. Try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   await ensureIndexes();
   const data = Body.parse(await req.json());
   const { users } = await collections();
