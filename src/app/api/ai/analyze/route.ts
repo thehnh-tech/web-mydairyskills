@@ -82,14 +82,7 @@ export async function POST(req: Request) {
       if (hasGroqFallback()) {
         provider = getAIProvider("groq");
       } else {
-        return NextResponse.json(
-          {
-            error:
-              "Gemini daily quota is reached and GROQ_API_KEY is not configured for fallback.",
-            code: "gemini-quota",
-          },
-          { status: 429 }
-        );
+        provider = getAIProvider("mock");
       }
     }
   }
@@ -98,15 +91,16 @@ export async function POST(req: Request) {
   try {
     result = await provider.analyze(input);
   } catch (e: any) {
-    if (provider.name === "gemini" && isQuotaLikeError(e) && hasGroqFallback()) {
-      provider = getAIProvider("groq");
+    if (provider.name === "gemini" && isQuotaLikeError(e)) {
+      const fallbackReason = e?.message || "Gemini temporary failure";
+      provider = hasGroqFallback() ? getAIProvider("groq") : getAIProvider("mock");
       try {
         result = await provider.analyze(input);
       } catch (fallbackError: any) {
-        console.error("[ai/analyze] groq fallback error:", fallbackError?.message || fallbackError);
+        console.error("[ai/analyze] fallback error:", fallbackError?.message || fallbackError);
         return NextResponse.json(
           {
-            error: `Provider ${provider.name} failed after Gemini quota fallback: ${
+            error: `Provider ${provider.name} failed after Gemini fallback (${fallbackReason}): ${
               fallbackError?.message || "unknown error"
             }`,
           },

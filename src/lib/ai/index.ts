@@ -26,7 +26,11 @@ export function isQuotaLikeError(error: unknown): boolean {
   const haystack = `${anyError?.body || ""} ${anyError?.message || ""}`.toLowerCase();
   return (
     anyError?.status === 429 ||
+    anyError?.status === 503 ||
     haystack.includes("resource_exhausted") ||
+    haystack.includes("unavailable") ||
+    haystack.includes("high demand") ||
+    haystack.includes("try again later") ||
     haystack.includes("quota") ||
     haystack.includes("rate limit") ||
     haystack.includes("rate_limit")
