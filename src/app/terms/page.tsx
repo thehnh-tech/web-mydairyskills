@@ -100,7 +100,7 @@ export default function TermsPage() {
             <p className="mt-2">
               The service is provided &quot;as is&quot;. Features may change, be added, or be
               removed. Temporary interruptions can happen during maintenance, deploys, or upstream
-              provider outages (Groq, MongoDB, Vercel). We make reasonable efforts to keep the
+              provider outages (Gemini, Groq, MongoDB, Vercel). We make reasonable efforts to keep the
               service running but offer no uptime guarantee.
             </p>
           </section>

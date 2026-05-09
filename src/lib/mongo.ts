@@ -86,6 +86,17 @@ export type SuggestionDoc = {
   reviewedAt: string | null;
 };
 
+export type AIUsageDoc = {
+  _id?: ObjectId;
+  key: string;
+  provider: "gemini";
+  dateKey: string;
+  count: number;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: Date;
+};
+
 export async function collections() {
   const db = await getDb();
   return {
@@ -93,6 +104,7 @@ export async function collections() {
     diary: db.collection<DiaryDoc>("diary_entries"),
     skills: db.collection<SkillDoc>("skills"),
     suggestions: db.collection<SuggestionDoc>("ai_suggestions"),
+    aiUsage: db.collection<AIUsageDoc>("ai_usage"),
   };
 }
 
@@ -102,6 +114,8 @@ export async function ensureIndexes() {
   await c.diary.createIndex({ userId: 1, dateKey: 1 }, { unique: true });
   await c.skills.createIndex({ userId: 1, name: 1 });
   await c.suggestions.createIndex({ userId: 1, dateKey: 1, createdAt: -1 });
+  await c.aiUsage.createIndex({ key: 1 }, { unique: true });
+  await c.aiUsage.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 }
 
 export { ObjectId };

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     onboarded: false,
     ai: {
       enabled: true,
-      provider: "groq",
+      provider: "gemini",
       shareTextWithProvider: true,
       retainHistory: true,
       lastConsentedAt: now,

@@ -15,7 +15,7 @@ type AIState = {
 };
 
 export function SettingsClient({
-  email, name, timezone, ai, hasGroqKey,
+  email, name, timezone, ai, hasGeminiKey, hasGroqKey,
 }: {
   email: string;
   name: string;
@@ -25,7 +25,7 @@ export function SettingsClient({
   hasGroqKey: boolean;
 }) {
   const router = useRouter();
-  const [state, setState] = useState<AIState>({ ...ai, provider: "groq" });
+  const [state, setState] = useState<AIState>({ ...ai, provider: "gemini" });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -37,7 +37,7 @@ export function SettingsClient({
       await fetch("/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...next, provider: "groq" }),
+        body: JSON.stringify({ ...next, provider: "gemini" }),
       });
     } finally {
       setSaving(false);
@@ -87,15 +87,19 @@ export function SettingsClient({
 
             <div className="rounded-[var(--radius)] border border-border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-[13.5px] font-medium">Provider · Groq</div>
-                {hasGroqKey ? (
+                <div className="text-[13.5px] font-medium">Provider · Gemini 3 Flash</div>
+                {hasGeminiKey ? (
                   <Badge variant="green">Configured</Badge>
                 ) : (
-                  <Badge variant="amber">Set GROQ_API_KEY</Badge>
+                  <Badge variant="amber">Set GEMINI_API_KEY</Badge>
                 )}
               </div>
               <div className="mt-1 text-[12px] text-muted-foreground">
-                Llama 3.3 70B with strict JSON output. Free tier, sub-second responses.
+                Uses gemini-3-flash-preview by default. If the daily Gemini quota is reached,
+                the server falls back to Groq when GROQ_API_KEY is configured.
+              </div>
+              <div className="mt-2 text-[12px] text-muted-foreground">
+                Groq fallback: {hasGroqKey ? "configured" : "not configured"}.
               </div>
             </div>
 

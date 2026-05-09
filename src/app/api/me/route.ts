@@ -18,7 +18,7 @@ export async function GET() {
     const now = new Date().toISOString();
     const seeded = {
       enabled: true,
-      provider: "groq" as const,
+      provider: "gemini" as const,
       shareTextWithProvider: true,
       retainHistory: true,
       lastConsentedAt: now,

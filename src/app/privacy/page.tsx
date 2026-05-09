@@ -91,10 +91,20 @@ export default function PrivacyPage() {
             <h2 className="text-base font-semibold text-foreground">3. Third parties we share with</h2>
             <ul className="mt-3 space-y-2.5 list-disc pl-5">
               <li>
-                <strong className="text-foreground">Groq, Inc.</strong> — when you tap Analyze on a
-                day, that day&apos;s diary text is sent to Groq&apos;s API to generate skill
-                suggestions. Groq processes the request to return a response and does not retain it
-                for training, per their terms. See{" "}
+                <strong className="text-foreground">Google Gemini API.</strong> When you tap
+                Analyze, that day&apos;s diary text is sent to Gemini to generate skill
+                suggestions. If the daily Gemini quota is reached, the request can fall back to
+                Groq. AI providers process the request to return a response; we do not use your
+                diary content to train AI models. See{" "}
+                <a
+                  className="text-chart-3 hover:underline"
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  policies.google.com/privacy
+                </a>{" "}
+                and{" "}
                 <a
                   className="text-chart-3 hover:underline"
                   href="https://groq.com/privacy-policy/"

@@ -97,7 +97,7 @@ export type ReviewDecision = z.infer<typeof ReviewDecision>;
 
 export const UserAIConsent = z.object({
   enabled: z.boolean().default(true),
-  provider: z.enum(["groq", "gemini", "mock", "openai"]).default("groq"),
+  provider: z.enum(["groq", "gemini", "mock", "openai"]).default("gemini"),
   shareTextWithProvider: z.boolean().default(true),
   retainHistory: z.boolean().default(true),
   lastConsentedAt: z.string().nullable().default(null),

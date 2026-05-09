@@ -279,7 +279,7 @@ export function TodayClient({ dateKey, initialContent, initialAnalyzed, aiEnable
             <div className="flex gap-2.5">
               <ShieldCheck size={14} className="mt-0.5 shrink-0 text-chart-3" />
               <div>
-                Your diary is private. Running analysis sends today's text to the AI provider you chose.{" "}
+                Your diary is private. Running analysis sends today's text to Gemini, with Groq as a quota fallback.{" "}
                 <Link href="/settings" className="text-chart-3 hover:underline">Manage</Link>
               </div>
             </div>

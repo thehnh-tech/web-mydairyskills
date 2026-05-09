@@ -1,7 +1,7 @@
 import { ANALYZE_SYSTEM_PROMPT, type AIAnalyzeInput, type AIAnalyzeOutput, type AIProvider } from "@mds/shared";
 
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -75,7 +75,7 @@ export function geminiProvider(): AIProvider {
 
       if (!res.ok) {
         const body = await res.text();
-        throw new Error(`Gemini ${res.status}: ${body.slice(0, 200)}`);
+        throw new AIProviderError("gemini", res.status, body);
       }
       const json = await res.json();
       const text =
@@ -92,6 +92,17 @@ export function geminiProvider(): AIProvider {
       };
     },
   };
+}
+
+export class AIProviderError extends Error {
+  constructor(
+    readonly provider: string,
+    readonly status: number,
+    readonly body: string
+  ) {
+    super(`${provider} ${status}: ${body.slice(0, 240)}`);
+    this.name = "AIProviderError";
+  }
 }
 
 function buildUserPrompt(input: AIAnalyzeInput): string {
