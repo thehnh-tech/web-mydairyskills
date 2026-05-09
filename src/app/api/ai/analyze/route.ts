@@ -89,24 +89,33 @@ export async function POST(req: Request) {
 
   let result;
   try {
-    result = await provider.analyze(input);
+    result = await analyzeWithRetry(provider, input);
   } catch (e: any) {
     if (provider.name === "gemini" && isQuotaLikeError(e)) {
       const fallbackReason = e?.message || "Gemini temporary failure";
       provider = hasGroqFallback() ? getAIProvider("groq") : getAIProvider("mock");
       try {
-        result = await provider.analyze(input);
+        result = await analyzeWithRetry(provider, input);
       } catch (fallbackError: any) {
         console.error("[ai/analyze] fallback error:", fallbackError?.message || fallbackError);
-        return NextResponse.json(
-          {
-            error: `Provider ${provider.name} failed after Gemini fallback (${fallbackReason}): ${
-              fallbackError?.message || "unknown error"
-            }`,
-          },
-          { status: 502 }
-        );
+        if (provider.name !== "mock") {
+          provider = getAIProvider("mock");
+          result = await provider.analyze(input);
+        } else {
+          return NextResponse.json(
+            {
+              error: `Provider ${provider.name} failed after Gemini fallback (${fallbackReason}): ${
+                fallbackError?.message || "unknown error"
+              }`,
+            },
+            { status: 502 }
+          );
+        }
       }
+    } else if (provider.name === "groq" && isQuotaLikeError(e)) {
+      console.error("[ai/analyze] groq temporary error:", e?.message || e);
+      provider = getAIProvider("mock");
+      result = await provider.analyze(input);
     } else {
       console.error("[ai/analyze] provider error:", e?.message || e);
       return NextResponse.json(
@@ -181,4 +190,25 @@ async function reserveGeminiRequest(aiUsage: any): Promise<{ allowed: boolean; c
 
   const count = result?.count || result?.value?.count || 1;
   return { allowed: count <= limit, count, limit };
+}
+
+async function analyzeWithRetry(provider: any, input: any) {
+  const maxAttempts = provider.name === "gemini" ? 2 : 1;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await provider.analyze(input);
+    } catch (error) {
+      lastError = error;
+      if (attempt >= maxAttempts || !isQuotaLikeError(error)) break;
+      await wait(750 * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

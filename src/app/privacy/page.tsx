@@ -93,9 +93,9 @@ export default function PrivacyPage() {
               <li>
                 <strong className="text-foreground">Google Gemini API.</strong> When you tap
                 Analyze, that day&apos;s diary text is sent to Gemini to generate skill
-                suggestions. If the daily Gemini quota is reached, the request can fall back to
-                Groq. AI providers process the request to return a response; we do not use your
-                diary content to train AI models. See{" "}
+                suggestions. If Gemini is overloaded or quota-limited, the request can fall back to
+                Groq or local template suggestions. AI providers process the request to return a
+                response; we do not use your diary content to train AI models. See{" "}
                 <a
                   className="text-chart-3 hover:underline"
                   href="https://policies.google.com/privacy"

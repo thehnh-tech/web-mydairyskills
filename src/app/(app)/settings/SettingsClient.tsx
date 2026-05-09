@@ -87,7 +87,7 @@ export function SettingsClient({
 
             <div className="rounded-[var(--radius)] border border-border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-[13.5px] font-medium">Provider · Gemini 3 Flash</div>
+                <div className="text-[13.5px] font-medium">Provider · Gemini 3.1 Flash-Lite</div>
                 {hasGeminiKey ? (
                   <Badge variant="green">Configured</Badge>
                 ) : (
@@ -95,8 +95,8 @@ export function SettingsClient({
                 )}
               </div>
               <div className="mt-1 text-[12px] text-muted-foreground">
-                Uses gemini-3-flash-preview by default. If the daily Gemini quota is reached,
-                the server falls back to Groq when GROQ_API_KEY is configured.
+                Uses gemini-3.1-flash-lite by default. If Gemini is overloaded or quota-limited,
+                the server falls back to Groq when GROQ_API_KEY is configured, then local templates.
               </div>
               <div className="mt-2 text-[12px] text-muted-foreground">
                 Groq fallback: {hasGroqKey ? "configured" : "not configured"}.
