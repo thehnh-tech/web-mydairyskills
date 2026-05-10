@@ -43,17 +43,22 @@ export function getDiaryContent(entry: DiaryLike | null | undefined): string {
     try {
       const userId = entry.userId || "";
       const dateKey = entry.dateKey || "";
-      const decipher = createDecipheriv(
-        ALGORITHM,
-        encryptionKey(),
-        Buffer.from(entry.contentIv, "base64")
-      );
-      decipher.setAAD(aad(userId, dateKey));
-      decipher.setAuthTag(Buffer.from(entry.contentTag, "base64"));
-      return Buffer.concat([
-        decipher.update(Buffer.from(entry.contentCiphertext, "base64")),
-        decipher.final(),
-      ]).toString("utf8");
+      for (const key of decryptionKeys()) {
+        try {
+          const decipher = createDecipheriv(
+            ALGORITHM,
+            key,
+            Buffer.from(entry.contentIv, "base64")
+          );
+          decipher.setAAD(aad(userId, dateKey));
+          decipher.setAuthTag(Buffer.from(entry.contentTag, "base64"));
+          return Buffer.concat([
+            decipher.update(Buffer.from(entry.contentCiphertext, "base64")),
+            decipher.final(),
+          ]).toString("utf8");
+        } catch {}
+      }
+      throw new Error("No configured diary encryption key could decrypt this entry.");
     } catch (error) {
       console.error("[diaryCrypto] failed to decrypt diary entry", {
         dateKey: entry.dateKey,
@@ -66,6 +71,14 @@ export function getDiaryContent(entry: DiaryLike | null | undefined): string {
 }
 
 function encryptionKey(): Buffer {
+  return deriveKey(encryptionSecrets()[0] || "");
+}
+
+function decryptionKeys(): Buffer[] {
+  return encryptionSecrets().map(deriveKey);
+}
+
+function encryptionSecrets(): string[] {
   const secret =
     process.env.DIARY_ENCRYPTION_KEY ||
     process.env.SESSION_PASSWORD ||
@@ -75,6 +88,16 @@ function encryptionKey(): Buffer {
     throw new Error("DIARY_ENCRYPTION_KEY or SESSION_PASSWORD must be at least 32 characters.");
   }
 
+  return [
+    process.env.DIARY_ENCRYPTION_KEY,
+    process.env.SESSION_PASSWORD,
+    process.env.NODE_ENV === "production" ? undefined : "dev-only-diary-encryption-key-change-me-please",
+  ].filter((value, index, all): value is string => {
+    return Boolean(value && value.length >= 32 && all.indexOf(value) === index);
+  });
+}
+
+function deriveKey(secret: string): Buffer {
   return createHash("sha256").update(secret, "utf8").digest();
 }
 
