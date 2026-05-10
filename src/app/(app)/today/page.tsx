@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntry } from "@/lib/diaryMigration";
 import { todayKey } from "@mds/shared";
 import { TodayClient } from "./TodayClient";
 
@@ -18,6 +19,7 @@ export default async function TodayPage() {
     diary.findOne({ userId, dateKey }),
     skills.countDocuments({ userId }),
   ]);
+  await migrateLegacyDiaryEntry(diary, entry);
 
   return (
     <TodayClient

@@ -5,6 +5,7 @@ import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getAIProvider, hasGroqFallback, isQuotaLikeError } from "@/lib/ai";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntry } from "@/lib/diaryMigration";
 
 const Body = z.object({
   dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
   }
 
   const entry = await diary.findOne({ userId, dateKey });
+  await migrateLegacyDiaryEntry(diary, entry);
   const diaryContent = getDiaryContent(entry);
   if (!entry || diaryContent.trim().length < 20) {
     return NextResponse.json(

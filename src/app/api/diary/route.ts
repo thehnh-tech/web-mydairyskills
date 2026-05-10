@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { collections } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntries } from "@/lib/diaryMigration";
 
 // Recent diary days for sidebar / calendar
 export async function GET(req: Request) {
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
     .sort({ dateKey: -1 })
     .limit(limit)
     .toArray();
+  await migrateLegacyDiaryEntries(diary, docs);
   return NextResponse.json({
     days: docs.map((d) => {
       const content = getDiaryContent(d);

@@ -4,6 +4,7 @@ import { assertWritable, classifyDay, wordCount } from "@mds/shared";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { encryptDiaryContent, getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntry } from "@/lib/diaryMigration";
 
 const Params = z.object({ dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 const PutBody = z.object({ content: z.string().max(50000) });
@@ -18,6 +19,7 @@ export async function GET(
   const user = await users.findOne({ _id: new ObjectId(userId) });
   const tz = user?.timezone || "UTC";
   const entry = await diary.findOne({ userId, dateKey });
+  await migrateLegacyDiaryEntry(diary, entry);
   return NextResponse.json({
     state: classifyDay(dateKey, tz),
     entry: entry ? serializeEntry(entry) : null,

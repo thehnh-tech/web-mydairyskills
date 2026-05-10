@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { collections } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntries } from "@/lib/diaryMigration";
 
 export async function GET() {
   const { userId } = await requireUser();
@@ -10,6 +11,7 @@ export async function GET() {
     diary.find({ userId }).sort({ dateKey: 1 }).toArray(),
     skills.find({ userId }).sort({ createdAt: 1 }).toArray(),
   ]);
+  await migrateLegacyDiaryEntries(diary, days);
   return NextResponse.json(
     {
       exportedAt: new Date().toISOString(),

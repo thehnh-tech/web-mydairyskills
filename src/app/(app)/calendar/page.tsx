@@ -2,6 +2,7 @@ import Link from "next/link";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntries } from "@/lib/diaryMigration";
 import { todayKey } from "@mds/shared";
 
 function buildMonthGrid(today: string) {
@@ -35,6 +36,7 @@ export default async function CalendarPage() {
   const dayDocs = await diary
     .find({ userId, dateKey: { $gte: startKey, $lte: endKey } })
     .toArray();
+  await migrateLegacyDiaryEntries(diary, dayDocs);
   const has = new Map(dayDocs.map((d) => [d.dateKey, d]));
 
   return (

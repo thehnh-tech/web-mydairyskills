@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Lock, Sparkles } from "lucide-react";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getDiaryContent } from "@/lib/diaryCrypto";
+import { migrateLegacyDiaryEntry } from "@/lib/diaryMigration";
 import { classifyDay, formatLong, shiftDateKey, todayKey } from "@mds/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ export default async function DayPage({
 
   const state = classifyDay(dateKey, tz);
   const entry = state === "past" ? await diary.findOne({ userId, dateKey }) : null;
+  await migrateLegacyDiaryEntry(diary, entry);
   const content = getDiaryContent(entry);
 
   return (
