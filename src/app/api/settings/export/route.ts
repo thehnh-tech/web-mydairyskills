@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { collections } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 
 export async function GET() {
   const { userId } = await requireUser();
@@ -14,7 +15,7 @@ export async function GET() {
       exportedAt: new Date().toISOString(),
       days: days.map((d) => ({
         dateKey: d.dateKey,
-        content: d.content,
+        content: getDiaryContent(d),
         wordCount: d.wordCount,
         analyzedAt: d.analyzedAt,
       })),

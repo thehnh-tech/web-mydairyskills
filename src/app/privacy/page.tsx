@@ -45,12 +45,12 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="text-foreground">Diary content:</strong> the text you write each
-                day, plus metadata (date, word count, save timestamps, whether the day was
-                analyzed).
+                day, stored encrypted at rest, plus metadata (date, word count, save timestamps,
+                whether the day was analyzed).
               </li>
               <li>
                 <strong className="text-foreground">Skills:</strong> skill names, emojis, levels,
-                progress, descriptions you accept after AI review.
+                progress, and descriptions managed by the AI skill engine.
               </li>
               <li>
                 <strong className="text-foreground">AI update history:</strong> raw AI skill updates
@@ -150,9 +150,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-base font-semibold text-foreground">4. Where data is stored</h2>
             <p className="mt-2">
-              Account, diary, skills and suggestion data are stored in MongoDB Atlas. The web app
-              is served from Vercel&apos;s edge infrastructure. Your data may be processed in the
-              United States and the European Union depending on the closest available region.
+              Account, encrypted diary, skills and suggestion data are stored in MongoDB Atlas.
+              The web app is served from Vercel&apos;s edge infrastructure. Your data may be
+              processed in the United States and the European Union depending on the closest
+              available region.
             </p>
           </section>
 
@@ -197,10 +198,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-base font-semibold text-foreground">8. Security</h2>
             <p className="mt-2">
-              Passwords are hashed with bcrypt. Sessions use encrypted, HTTP-only, SameSite=Lax
-              cookies. Database connections use TLS. No system is perfectly secure — please use a
-              unique, strong password and contact us at once if you suspect your account has been
-              compromised.
+              Passwords are hashed with bcrypt. Diary text is encrypted before it is stored in
+              MongoDB. Sessions use encrypted, HTTP-only, SameSite=Lax cookies. Database
+              connections use TLS. No system is perfectly secure — please use a unique, strong
+              password and contact us at once if you suspect your account has been compromised.
             </p>
           </section>
 

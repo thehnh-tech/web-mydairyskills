@@ -50,7 +50,12 @@ export type DiaryDoc = {
   _id?: ObjectId;
   userId: string;
   dateKey: string;
-  content: string;
+  content?: string;
+  contentCiphertext?: string;
+  contentIv?: string;
+  contentTag?: string;
+  contentHash?: string;
+  contentEncryptionVersion?: number;
   wordCount: number;
   status: "draft" | "saved" | "locked";
   analyzedAt: string | null;

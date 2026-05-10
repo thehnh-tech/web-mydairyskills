@@ -1,6 +1,9 @@
 import { ANALYZE_SYSTEM_PROMPT, type AIAnalyzeInput, type AIAnalyzeOutput, type AIProvider } from "@mds/shared";
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+// Google documents Gemini 3 Flash with the API model id below. Keep this
+// overridable because preview access and free-tier availability can vary by
+// account/project.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const RESPONSE_SCHEMA = {
@@ -66,9 +69,9 @@ export function geminiProvider(): AIProvider {
           systemInstruction: { parts: [{ text: ANALYZE_SYSTEM_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: userPrompt }] }],
           generationConfig: {
-            temperature: 0.2,
             responseMimeType: "application/json",
             responseSchema: RESPONSE_SCHEMA,
+            thinkingConfig: { thinkingLevel: "low" },
           },
         }),
       });

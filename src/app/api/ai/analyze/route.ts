@@ -4,6 +4,7 @@ import { entriesForNextLevel, normalizeSkillName } from "@mds/shared";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
 import { getAIProvider, hasGroqFallback, isQuotaLikeError } from "@/lib/ai";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 
 const Body = z.object({
   dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -27,7 +28,8 @@ export async function POST(req: Request) {
   }
 
   const entry = await diary.findOne({ userId, dateKey });
-  if (!entry || entry.content.trim().length < 20) {
+  const diaryContent = getDiaryContent(entry);
+  if (!entry || diaryContent.trim().length < 20) {
     return NextResponse.json(
       { error: "Write at least 20 characters before analyzing." },
       { status: 400 }
@@ -66,7 +68,7 @@ export async function POST(req: Request) {
   const existingSkills = await skills.find({ userId }).toArray();
   const input = {
     dateKey,
-    content: entry.content,
+    content: diaryContent,
     existingSkills: existingSkills.map((s) => ({
       id: s._id!.toString(),
       name: s.name,
@@ -87,13 +89,13 @@ export async function POST(req: Request) {
 
   let result;
   try {
-    result = await analyzeWithRetry(provider, input);
+    result = await analyzeWithRetry(provider, input, aiUsage);
   } catch (e: any) {
     if (provider.name === "gemini" && isQuotaLikeError(e)) {
       const fallbackReason = e?.message || "Gemini temporary failure";
       provider = hasGroqFallback() ? getAIProvider("groq") : getAIProvider("mock");
       try {
-        result = await analyzeWithRetry(provider, input);
+        result = await analyzeWithRetry(provider, input, aiUsage);
       } catch (fallbackError: any) {
         console.error("[ai/analyze] fallback error:", fallbackError?.message || fallbackError);
         if (provider.name !== "mock") {
@@ -298,21 +300,68 @@ async function reserveGeminiRequest(aiUsage: any): Promise<{ allowed: boolean; c
   return { allowed: count <= limit, count, limit };
 }
 
-async function analyzeWithRetry(provider: any, input: any) {
-  const maxAttempts = provider.name === "gemini" ? 2 : 1;
+async function analyzeWithRetry(provider: any, input: any, aiUsage?: any) {
+  const maxAttempts = provider.name === "gemini" ? geminiRetryCount() : 1;
   let lastError;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
+      if (provider.name === "gemini" && aiUsage) {
+        await waitForGeminiTurn(aiUsage);
+      }
       return await provider.analyze(input);
     } catch (error) {
       lastError = error;
       if (attempt >= maxAttempts || !isQuotaLikeError(error)) break;
-      await wait(750 * attempt);
+      await wait(geminiBackoffMs(attempt));
     }
   }
 
   throw lastError;
+}
+
+async function waitForGeminiTurn(aiUsage: any) {
+  const minInterval = geminiMinIntervalMs();
+  if (minInterval <= 0) return;
+
+  const key = "gemini:last-request";
+  const now = new Date();
+  const doc = await aiUsage.findOne({ key });
+  const updatedAt = doc?.updatedAt ? Date.parse(doc.updatedAt) : 0;
+  const waitMs = Math.max(0, updatedAt + minInterval - now.getTime());
+  if (waitMs > 0) await wait(waitMs);
+
+  const afterWait = new Date().toISOString();
+  await aiUsage.updateOne(
+    { key },
+    {
+      $set: {
+        key,
+        provider: "gemini",
+        dateKey: utcDateKey(),
+        count: 1,
+        updatedAt: afterWait,
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      },
+      $setOnInsert: { createdAt: afterWait },
+    },
+    { upsert: true }
+  );
+}
+
+function geminiRetryCount(): number {
+  const raw = Number.parseInt(process.env.GEMINI_MAX_RETRIES || "3", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 3;
+}
+
+function geminiMinIntervalMs(): number {
+  const raw = Number.parseInt(process.env.GEMINI_MIN_INTERVAL_MS || "6000", 10);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 6000;
+}
+
+function geminiBackoffMs(attempt: number): number {
+  const base = Math.min(30_000, (2 ** (attempt - 1) + 1) * 1000);
+  return base + Math.floor(Math.random() * 350);
 }
 
 function wait(ms: number) {

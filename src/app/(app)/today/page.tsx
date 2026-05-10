@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 import { todayKey } from "@mds/shared";
 import { TodayClient } from "./TodayClient";
 
@@ -21,7 +22,7 @@ export default async function TodayPage() {
   return (
     <TodayClient
       dateKey={dateKey}
-      initialContent={entry?.content || ""}
+      initialContent={getDiaryContent(entry)}
       initialAnalyzed={!!entry?.analyzedAt}
       initialAIProvider={entry?.analyzedProvider || null}
       aiEnabled={user.ai.enabled}

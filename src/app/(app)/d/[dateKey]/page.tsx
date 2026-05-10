@@ -3,10 +3,10 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Lock, Sparkles } from "lucide-react";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 import { classifyDay, formatLong, shiftDateKey, todayKey } from "@mds/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Markdown } from "@/components/app/Markdown";
 
 export default async function DayPage({
   params,
@@ -26,6 +26,7 @@ export default async function DayPage({
 
   const state = classifyDay(dateKey, tz);
   const entry = state === "past" ? await diary.findOne({ userId, dateKey }) : null;
+  const content = getDiaryContent(entry);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -60,8 +61,8 @@ export default async function DayPage({
           </div>
 
           {state === "past" ? (
-            entry && entry.content ? (
-              <Markdown source={entry.content} />
+            entry && content ? (
+              <PlainDiaryText value={content} />
             ) : (
               <div className="rounded-[var(--radius)] border border-dashed border-border p-8 text-center text-[13px] text-muted-foreground">
                 No entry on this day.
@@ -80,6 +81,14 @@ export default async function DayPage({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PlainDiaryText({ value }: { value: string }) {
+  return (
+    <div className="min-h-[360px] whitespace-pre-wrap text-[15px] leading-[1.7] text-foreground">
+      {value}
     </div>
   );
 }

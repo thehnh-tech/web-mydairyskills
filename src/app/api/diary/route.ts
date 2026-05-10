@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { collections } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 
 // Recent diary days for sidebar / calendar
 export async function GET(req: Request) {
@@ -14,13 +15,16 @@ export async function GET(req: Request) {
     .limit(limit)
     .toArray();
   return NextResponse.json({
-    days: docs.map((d) => ({
-      dateKey: d.dateKey,
-      excerpt: excerpt(d.content),
-      wordCount: d.wordCount,
-      analyzedAt: d.analyzedAt,
-      analyzedProvider: d.analyzedProvider || null,
-    })),
+    days: docs.map((d) => {
+      const content = getDiaryContent(d);
+      return {
+        dateKey: d.dateKey,
+        excerpt: excerpt(content),
+        wordCount: d.wordCount,
+        analyzedAt: d.analyzedAt,
+        analyzedProvider: d.analyzedProvider || null,
+      };
+    }),
   });
 }
 

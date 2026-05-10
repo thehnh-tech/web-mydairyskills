@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assertWritable, classifyDay, wordCount } from "@mds/shared";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { encryptDiaryContent, getDiaryContent } from "@/lib/diaryCrypto";
 
 const Params = z.object({ dateKey: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 const PutBody = z.object({ content: z.string().max(50000) });
@@ -58,11 +59,13 @@ export async function PUT(
 
   const now = new Date().toISOString();
   const wc = wordCount(content);
+  const encrypted = encryptDiaryContent(content, userId, dateKey);
 
   const result = await diary.findOneAndUpdate(
     { userId, dateKey },
     {
-      $set: { content, wordCount: wc, status: "saved", updatedAt: now },
+      $set: { ...encrypted, wordCount: wc, status: "saved", updatedAt: now },
+      $unset: { content: "" },
       $setOnInsert: { userId, dateKey, createdAt: now, analyzedAt: null },
     },
     { upsert: true, returnDocument: "after" }
@@ -76,7 +79,7 @@ function serializeEntry(d: any) {
     id: d._id?.toString(),
     userId: d.userId,
     dateKey: d.dateKey,
-    content: d.content,
+    content: getDiaryContent(d),
     wordCount: d.wordCount,
     status: d.status,
     analyzedAt: d.analyzedAt,

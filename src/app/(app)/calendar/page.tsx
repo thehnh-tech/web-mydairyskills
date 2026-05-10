@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
+import { getDiaryContent } from "@/lib/diaryCrypto";
 import { todayKey } from "@mds/shared";
 
 function buildMonthGrid(today: string) {
@@ -59,6 +60,7 @@ export default async function CalendarPage() {
             {grid.cells.map((c, i) => {
               if (!c) return <div key={i} />;
               const entry = has.get(c.key);
+              const entryText = entry ? getDiaryContent(entry) : "";
               const isToday = c.key === today;
               const isFuture = c.key > today;
               const href = isToday ? "/today" : `/d/${c.key}`;
@@ -82,7 +84,7 @@ export default async function CalendarPage() {
                   </div>
                   {entry && (
                     <div className="mt-1 hidden sm:block line-clamp-3 text-[11.5px] leading-tight text-muted-foreground">
-                      {entry.content.replace(/^#+\s*/gm, "").slice(0, 80)}
+                      {entryText.replace(/\s+/g, " ").trim().slice(0, 80)}
                     </div>
                   )}
                 </Link>
