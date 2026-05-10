@@ -1,9 +1,9 @@
 import { ANALYZE_SYSTEM_PROMPT, type AIAnalyzeInput, type AIAnalyzeOutput, type AIProvider } from "@mds/shared";
 
-// Google documents Gemini 3 Flash with the API model id below. Keep this
-// overridable because preview access and free-tier availability can vary by
-// account/project.
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+// Default to the stable low-latency model. Gemini 3 Flash is still preview-only
+// in the public API docs, and the preview pool has been returning frequent 503s
+// on free-tier projects. Keep this overridable for paid projects or experiments.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const RESPONSE_SCHEMA = {
