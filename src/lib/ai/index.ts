@@ -27,8 +27,13 @@ export function isQuotaLikeError(error: unknown): boolean {
   return (
     anyError?.status === 429 ||
     anyError?.status === 503 ||
+    anyError?.status === 404 ||
     haystack.includes("resource_exhausted") ||
     haystack.includes("unavailable") ||
+    haystack.includes("not_found") ||
+    haystack.includes("model_not_found") ||
+    haystack.includes("invalid_argument") ||
+    haystack.includes("model is not found") ||
     haystack.includes("high demand") ||
     haystack.includes("try again later") ||
     haystack.includes("quota") ||

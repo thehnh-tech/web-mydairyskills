@@ -1,9 +1,8 @@
 import { ANALYZE_SYSTEM_PROMPT, type AIAnalyzeInput, type AIAnalyzeOutput, type AIProvider } from "@mds/shared";
 
-// Default to the stable low-latency model. Gemini 3 Flash is still preview-only
-// in the public API docs, and the preview pool has been returning frequent 503s
-// on free-tier projects. Keep this overridable for paid projects or experiments.
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+// Default to a stable public Gemini API model. Keep this overridable so we can
+// test previews without shipping a brittle default to production.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const RESPONSE_SCHEMA = {
@@ -71,13 +70,18 @@ export function geminiProvider(): AIProvider {
           generationConfig: {
             responseMimeType: "application/json",
             responseSchema: RESPONSE_SCHEMA,
-            thinkingConfig: { thinkingLevel: "low" },
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
 
       if (!res.ok) {
         const body = await res.text();
+        console.error("[gemini] generateContent failed", {
+          model: GEMINI_MODEL,
+          status: res.status,
+          body: body.slice(0, 1000),
+        });
         throw new AIProviderError("gemini", res.status, body);
       }
       const json = await res.json();
