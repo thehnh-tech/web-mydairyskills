@@ -41,3 +41,21 @@ export function isQuotaLikeError(error: unknown): boolean {
     haystack.includes("rate_limit")
   );
 }
+
+export function isRetryableProviderError(error: unknown): boolean {
+  const anyError = error as { status?: number; body?: string; message?: string };
+  const haystack = `${anyError?.body || ""} ${anyError?.message || ""}`.toLowerCase();
+  if (haystack.includes("prepayment credits are depleted")) return false;
+  if (haystack.includes("api_key_invalid") || haystack.includes("permission_denied")) return false;
+  if (haystack.includes("not_found") || haystack.includes("invalid_argument")) return false;
+  return (
+    anyError?.status === 429 ||
+    anyError?.status === 503 ||
+    haystack.includes("resource_exhausted") ||
+    haystack.includes("unavailable") ||
+    haystack.includes("high demand") ||
+    haystack.includes("try again later") ||
+    haystack.includes("rate limit") ||
+    haystack.includes("rate_limit")
+  );
+}

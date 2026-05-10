@@ -3,7 +3,7 @@ import { z } from "zod";
 import { entriesForNextLevel, normalizeSkillName } from "@mds/shared";
 import { collections, ObjectId } from "@/lib/mongo";
 import { requireUser } from "@/lib/session";
-import { getAIProvider, hasGroqFallback, isQuotaLikeError } from "@/lib/ai";
+import { getAIProvider, hasGroqFallback, isQuotaLikeError, isRetryableProviderError } from "@/lib/ai";
 import { getDiaryContent } from "@/lib/diaryCrypto";
 import { migrateLegacyDiaryEntry } from "@/lib/diaryMigration";
 
@@ -314,7 +314,7 @@ async function analyzeWithRetry(provider: any, input: any, aiUsage?: any) {
       return await provider.analyze(input);
     } catch (error) {
       lastError = error;
-      if (attempt >= maxAttempts || !isQuotaLikeError(error)) break;
+      if (attempt >= maxAttempts || !isRetryableProviderError(error)) break;
       await wait(geminiBackoffMs(attempt));
     }
   }
