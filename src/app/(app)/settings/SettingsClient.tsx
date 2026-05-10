@@ -72,7 +72,7 @@ export function SettingsClient({
           <Section
             title="AI analysis"
             icon={<Sparkles size={14} className="text-chart-3" />}
-            description="On by default. The AI only looks at your diary when you tap Analyze, and every suggestion goes through review — nothing auto-applies."
+            description="On by default. The AI only looks at your diary when you tap Analyze, then creates, renames, and levels skills automatically."
           >
             <Toggle
               label="AI analysis"
